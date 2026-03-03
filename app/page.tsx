@@ -1,4 +1,5 @@
 import { CampaignBanner } from "./components/home/CampaignBanner";
+import DetailsModal from "./components/home/DatailsModal";
 import { DrawIntro } from "./components/home/DrawIntro";
 import { DrawSteps } from "./components/home/DrawSteps";
 import { DrawWorkspace } from "./components/home/DrawWorkspace";
@@ -9,6 +10,8 @@ import { SubmitSection } from "./components/home/SubmitSection";
 export default function Home() {
   return (
     <div className="min-h-screen flex flex-col bg-background">
+      <DetailsModal />
+
       <CampaignBanner />
       <SiteHeader />
 
