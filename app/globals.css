@@ -141,3 +141,78 @@
     @apply bg-background text-foreground;
   }
 }
+
+@keyframes gift-sway {
+  0% {
+    transform: rotate(0deg) scale(1);
+  }
+  25% {
+    transform: rotate(-8deg) scale(1.2);
+  }
+  50% {
+    transform: rotate(8deg) scale(1.2);
+  }
+  75% {
+    transform: rotate(-6deg) scale(1.1);
+  }
+  100% {
+    transform: rotate(0deg) scale(1);
+  }
+}
+
+@layer utilities {
+  .group:hover .animate-gift-sway {
+    animation: gift-sway 800ms ease-in-out;
+  }
+}
+
+.gift-box {
+  position: relative;
+  width: 120px;
+  height: 120px;
+}
+
+.gift-body {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 120px;
+  height: 82px;
+  border-radius: 12px;
+  background: var(--color-primary);
+}
+
+.gift-lid {
+  position: absolute;
+  top: 24px;
+  left: -4px;
+  width: 128px;
+  height: 24px;
+  border-radius: 10px;
+  background: var(--color-accent);
+  transform-origin: right center;
+  transition: transform 500ms ease;
+}
+
+.gift-ribbon-v {
+  position: absolute;
+  left: 52px;
+  bottom: 0;
+  width: 16px;
+  height: 82px;
+  border-radius: 8px;
+  background: var(--color-accent);
+}
+
+.gift-ribbon-h {
+  position: absolute;
+  top: 56px;
+  left: 0;
+  width: 120px;
+  height: 12px;
+  background: color-mix(in oklab, var(--color-accent) 75%, white 25%);
+}
+
+.gift-box.is-open .gift-lid {
+  transform: translate(-6px, -20px) rotate(-28deg);
+}

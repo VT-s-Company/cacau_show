@@ -2,11 +2,26 @@
 
 import { useState, useEffect } from "react";
 import { ConfirmDrawingModal } from "./ConfirmDrawingModal";
+import AnalyzeWait from "./AnalyzeWait";
+import DrawResult from "./DrawResult";
+import DrawPrize from "./DrawPrize";
+import { useDrawFlow } from "./DrawFlowContext";
 
 export function SubmitSection() {
   const [minutes, setMinutes] = useState(29);
   const [seconds, setSeconds] = useState(30);
   const [isModalOpen, setIsModalOpen] = useState(false);
+
+  const {
+    isAnalyzing,
+    showResult,
+    showPrize,
+    progress,
+    setIsAnalyzing,
+    setShowResult,
+    setShowPrize,
+    setProgress,
+  } = useDrawFlow();
 
   useEffect(() => {
     const savedTime = localStorage.getItem("timerExpiry");
@@ -35,11 +50,65 @@ export function SubmitSection() {
     return () => clearInterval(interval);
   }, []);
 
+  // Controla o progresso da análise
+  useEffect(() => {
+    if (!isAnalyzing) return;
+
+    const duration = 5000; // 5 segundos para completar
+    const steps = 100;
+    const stepDuration = duration / steps;
+
+    const progressInterval = setInterval(() => {
+      setProgress((prev: number) => {
+        if (prev >= 100) {
+          clearInterval(progressInterval);
+          return 100;
+        }
+        return prev + 1;
+      });
+    }, stepDuration);
+
+    return () => clearInterval(progressInterval);
+  }, [isAnalyzing, setProgress]);
+
+  // Quando a análise terminar, mostra o resultado
+  useEffect(() => {
+    if (progress >= 100 && isAnalyzing) {
+      const timer = setTimeout(() => {
+        setIsAnalyzing(false);
+        setShowResult(true);
+      }, 500); // Pequeno delay para suavizar a transição
+
+      return () => clearTimeout(timer);
+    }
+  }, [progress, isAnalyzing, setIsAnalyzing, setShowResult]);
+
   const handleConfirm = () => {
     setIsModalOpen(false);
-    // TODO: Implementar lógica de envio do desenho
-    console.log("Desenho enviado!");
+    setProgress(0);
+    setShowResult(false);
+    setShowPrize(false);
+    setIsAnalyzing(true);
   };
+
+  const handleViewPrizes = () => {
+    setShowResult(false);
+    setShowPrize(true);
+  };
+
+  if (showPrize) {
+    return <DrawPrize />;
+  }
+
+  // Se está mostrando resultado
+  if (showResult) {
+    return <DrawResult onViewPrizes={handleViewPrizes} />;
+  }
+
+  // Se está analisando, mostra o componente de análise
+  if (isAnalyzing) {
+    return <AnalyzeWait progress={progress} />;
+  }
 
   return (
     <>
