@@ -1,7 +1,3 @@
-/**
- * Configuração do painel administrativo
- */
-
 // Hash da rota admin (configurável via env)
 export const ADMIN_ROUTE_HASH =
   process.env.ADMIN_ROUTE_HASH || "admin-dashboard-2026";
