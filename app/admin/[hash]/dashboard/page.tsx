@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import React, { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import {
   LogOut,
@@ -196,7 +196,7 @@ export default function DashboardPage({ params }: DashboardPageProps) {
   const getStatusBadge = (status: string) => {
     const statusMap: Record<
       string,
-      { color: string; icon: JSX.Element; label: string }
+      { color: string; icon: React.ReactNode; label: string }
     > = {
       PAID: {
         color: "bg-green-100 text-green-800 border-green-200",
