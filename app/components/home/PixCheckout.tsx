@@ -1,12 +1,12 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useState, useEffect, useRef } from "react";
 import Image from "next/image";
 import type { Product } from "./storeTypes";
 import TabletesSelect from "./TabletesSelect";
-import { ChevronLeft } from "lucide-react";
+import { ChevronLeft, X } from "lucide-react";
 import PixPaymentModal from "./PixPaymentModal";
-import { createPixTransaction, type FreePayItem } from "@/lib/freepay-api";
+import { type FreePayItemRequest } from "@/lib/freepay-api";
 
 interface PixCheckoutProps {
   product: Product;
@@ -64,6 +64,15 @@ function formatPhone(value: string) {
   return `(${digits.slice(0, 2)}) ${digits.slice(2, 7)}-${digits.slice(7)}`;
 }
 
+function formatCpf(value: string) {
+  const digits = onlyDigits(value).slice(0, 11);
+  if (digits.length <= 3) return digits;
+  if (digits.length <= 6) return `${digits.slice(0, 3)}.${digits.slice(3)}`;
+  if (digits.length <= 9)
+    return `${digits.slice(0, 3)}.${digits.slice(3, 6)}.${digits.slice(6)}`;
+  return `${digits.slice(0, 3)}.${digits.slice(3, 6)}.${digits.slice(6, 9)}-${digits.slice(9)}`;
+}
+
 export default function PixCheckout({
   product,
   onBack,
@@ -96,8 +105,25 @@ export default function PixCheckout({
     expiresAt: string;
     transactionId: string;
   } | null>(null);
+  const [toast, setToast] = useState<{
+    message: string;
+    type: "error" | "success";
+  } | null>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
 
   const cepDigits = useMemo(() => onlyDigits(cep), [cep]);
+
+  useEffect(() => {
+    if (toast) {
+      const timer = setTimeout(() => setToast(null), 4000);
+      return () => clearTimeout(timer);
+    }
+  }, [toast]);
+
+  const handleOnBack = () => {
+    containerRef.current?.scrollIntoView({ behavior: "smooth" });
+    setTimeout(onBack, 300);
+  };
 
   const tabletsCount = selectedTablets.filter(Boolean).length;
   const tabletsPrice = tabletsCount * 10;
@@ -173,38 +199,40 @@ export default function PixCheckout({
     setIsGeneratingPix(true);
 
     try {
-      // Preparar items para a API
-      const items: FreePayItem[] = [
+      // =========================
+      // ITEMS
+      // =========================
+      const items: FreePayItemRequest[] = [
         {
           title: product.name,
-          unit_price: Math.round(product.discountPrice * 100), // converter para centavos
+          unit_price: Math.round(product.discountPrice * 100),
           quantity: 1,
           tangible: true,
         },
       ];
 
-      // Adicionar tabletes selecionados
       const tabletNames = [
         "Tablete Pistache",
         "Tablete Morango",
         "Tablete Leite",
       ];
+
       selectedTablets.forEach((selected, index) => {
         if (selected) {
           items.push({
             title: tabletNames[index],
-            unit_price: 1000, // R$ 10,00 em centavos
+            unit_price: 1000,
             quantity: 1,
             tangible: true,
           });
         }
       });
 
-      // Adicionar frete se houver
       if (shippingPrice > 0) {
         const shippingLabel =
-          shippingOptions.find((opt) => opt.id === shippingOption)?.label ||
+          shippingOptions.find((opt) => opt.id === shippingOption)?.label ??
           "Frete";
+
         items.push({
           title: shippingLabel,
           unit_price: Math.round(shippingPrice * 100),
@@ -213,73 +241,143 @@ export default function PixCheckout({
         });
       }
 
-      // A chave da API deve ser fornecida nas variáveis de ambiente
-      const apiKey = process.env.NEXT_PUBLIC_FREEPAY_API_KEY || "";
+      // =========================
+      // PAYLOAD CORRETO FREEPAY
+      // =========================
+      const payload = {
+        payment_method: "pix",
+        customer: {
+          document: {
+            type: "cpf",
+            number: onlyDigits(cpf),
+          },
+          name: fullName,
+          email: "cliente@example.com",
+          phone: `+55${onlyDigits(phone)}`,
+        },
+        amount: Math.round(totalPrice * 100),
+        items,
+        shipping: {
+          fee: Math.round(shippingPrice * 100),
+          address: {
+            street,
+            street_number: number,
+            complement: complement || "",
+            zip_code: cepDigits.replace(/(\d{5})(\d{3})/, "$1-$2"),
+            neighborhood: district,
+            city,
+            state,
+            country: "BR",
+          },
+        },
+        metadata: {
+          provider_name: "Cacau Show - Promoção Páscoa",
+        },
+        pix: {
+          expires_in_days: 1,
+        },
+        ip: "127.0.0.1",
+        installments: 1,
+        postback_url: `${globalThis.location.origin}/api/webhook/freepay`,
+      };
 
-      if (!apiKey) {
+      // 🔒 Chama sua API interna, não FreePay direto
+      const response = await fetch("/api/payments", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(payload),
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error?.error || "Erro ao gerar PIX");
+      }
+
+      const data = await response.json();
+
+      // =========================
+      // VERIFICAR STATUS E EXTRAIR DADOS
+      // =========================
+      const transactionData = data?.data;
+
+      if (!transactionData) {
         throw new Error(
-          "Chave da API não configurada. Configure NEXT_PUBLIC_FREEPAY_API_KEY",
+          "Resposta inválida da API. Tente novamente mais tarde.",
         );
       }
 
-      const response = await createPixTransaction(
-        {
-          amount: Math.round(totalPrice * 100), // converter para centavos
-          payment_method: "pix",
-          postback_url: `${globalThis.location.origin}/api/webhook/freepay`,
-          customer: {
-            name: fullName,
-            email: "cliente@example.com", // Você pode adicionar um campo de email
-            document: onlyDigits(cpf),
-            phone: onlyDigits(phone),
-            address: {
-              street,
-              number,
-              complement: complement || undefined,
-              district,
-              city,
-              state,
-              zipcode: cepDigits,
-            },
-          },
-          items,
-          pix: {
-            expires_in: 3600, // 1 hora
-          },
-          metadata: {
-            provider_name: "Cacau Show - Promoção Páscoa",
-          },
-        },
-        apiKey,
-      );
+      // Verificar se foi recusado
+      if (transactionData.status === "REFUSED") {
+        setToast({
+          message:
+            "Transação recusada. Verifique seus dados e tente novamente.",
+          type: "error",
+        });
+        throw new Error("Transação recusada");
+      }
 
-      // Preparar dados para o modal
+      // Verificar se tem QR Code
+      if (!transactionData.pix?.qr_code) {
+        setToast({
+          message: "Erro ao gerar código PIX. Tente novamente.",
+          type: "error",
+        });
+        throw new Error("Código PIX não gerado");
+      }
+
       setPixData({
-        qrCode: response.pix.qr_code,
-        qrCodeBase64: response.pix.qr_code_base64,
-        amount: response.amount,
-        expiresAt: response.pix.expires_at,
-        transactionId: response.id,
+        qrCode: transactionData.pix.qr_code,
+        qrCodeBase64: transactionData.pix.qr_code,
+        amount: transactionData.amount,
+        expiresAt: transactionData.pix.expiration_date,
+        transactionId: transactionData.id,
       });
+
       setShowPixModal(true);
     } catch (error) {
       console.error("Erro ao gerar PIX:", error);
-      alert(
-        error instanceof Error
-          ? error.message
-          : "Erro ao gerar pagamento PIX. Tente novamente.",
-      );
+
+      if (!toast?.message || toast.type !== "error") {
+        setToast({
+          message:
+            error instanceof Error
+              ? error.message
+              : "Erro ao gerar pagamento PIX. Tente novamente.",
+          type: "error",
+        });
+      }
     } finally {
       setIsGeneratingPix(false);
     }
   };
 
   return (
-    <div className="w-full max-w-6xl px-4 pb-10 pt-4">
+    <div ref={containerRef} className="w-full max-w-6xl px-4 pb-10 pt-4">
+      {/* Toast de Notificação */}
+      {toast && (
+        <div
+          className={`fixed top-4 right-4 z-50 flex items-center gap-3 rounded-lg px-4 py-3 shadow-lg animate-in fade-in slide-in-from-top-2 ${
+            toast.type === "error"
+              ? "bg-red-500 text-white"
+              : "bg-green-500 text-white"
+          }`}
+        >
+          <span className="text-sm font-medium">{toast.message}</span>
+          <button
+            onClick={() => setToast(null)}
+            className="ml-2 hover:opacity-80 transition-opacity"
+          >
+            <X size={16} />
+          </button>
+        </div>
+      )}
+
       <nav className="mb-6 text-sm text-muted-foreground">
         <button
           type="button"
-          onClick={onBack}
+          onClick={handleOnBack}
           className="hover:text-foreground transition-colors"
         >
           <ChevronLeft className="inline-block mr-1" size={16} />
@@ -349,9 +447,10 @@ export default function PixCheckout({
                 <input
                   id="checkout-cpf"
                   value={cpf}
-                  onChange={(event) => setCpf(event.target.value)}
+                  onChange={(event) => setCpf(formatCpf(event.target.value))}
                   className="mt-1 w-full rounded-xl border-2 border-border px-4 py-3 bg-background"
                   placeholder="000.000.000-00"
+                  maxLength={14}
                 />
               </div>
 
@@ -647,7 +746,13 @@ export default function PixCheckout({
       {/* Modal de Pagamento PIX */}
       <PixPaymentModal
         isOpen={showPixModal}
-        onClose={() => setShowPixModal(false)}
+        onClose={() => {
+          setShowPixModal(false);
+          setToast({
+            message: "Aguardando confirmação do pagamento...",
+            type: "success",
+          });
+        }}
         pixData={pixData}
       />
     </div>

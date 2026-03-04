@@ -3,6 +3,7 @@
 import { Copy, X, CheckCircle2, QrCode } from "lucide-react";
 import { useState } from "react";
 import Image from "next/image";
+import PixDisplay from "./PixDisplay";
 
 interface PixPaymentModalProps {
   isOpen: boolean;
@@ -92,12 +93,9 @@ export default function PixPaymentModal({
           {/* QR Code */}
           <div className="flex justify-center">
             <div className="p-4 bg-white rounded-xl">
-              <Image
-                src={`data:image/png;base64,${pixData.qrCodeBase64}`}
-                alt="QR Code PIX"
-                width={200}
-                height={200}
-                className="w-48 h-48"
+              <PixDisplay
+                code={pixData.qrCode}
+                expiration={pixData.expiresAt}
               />
             </div>
           </div>

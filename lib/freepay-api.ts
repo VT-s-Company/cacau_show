@@ -1,48 +1,56 @@
 // Tipos para a API FreePay Brasil
-export interface FreePayCustomer {
-  name: string;
-  email: string;
-  document: string;
-  phone: string;
-  address: {
-    street: string;
-    number: string;
-    complement?: string;
-    district: string;
-    city: string;
-    state: string;
-    zipcode: string;
-  };
-}
-
-export interface FreePayItem {
+export interface FreePayItemRequest {
   title: string;
   unit_price: number; // em centavos
   quantity: number;
   tangible: boolean;
+  external_ref?: string;
 }
 
-export interface FreePayPixData {
-  expires_in?: number; // em segundos, padrão 3600 (1h)
+export interface FreePayShippingAddress {
+  street: string;
+  street_number: string;
+  complement?: string;
+  zip_code: string;
+  neighborhood: string;
+  city: string;
+  state: string;
+  country: string;
+}
+
+export interface FreePayShipping {
+  fee: number; // em centavos
+  address: FreePayShippingAddress;
 }
 
 export interface CreatePixTransactionRequest {
   amount: number; // em centavos
   payment_method: "pix";
-  postback_url: string;
-  customer: FreePayCustomer;
-  items: FreePayItem[];
-  pix?: FreePayPixData;
-  metadata: {
-    provider_name: string;
+  customer: {
+    name: string;
+    email: string;
+    document: {
+      type: "cpf" | "cnpj";
+      number: string;
+    };
+    phone: string;
   };
+  items: FreePayItemRequest[];
+  shipping: FreePayShipping;
+  pix?: {
+    expires_in_days?: number;
+  };
+  metadata: Record<string, string>;
   ip?: string;
+  installments?: number;
+  postback_url: string;
 }
 
-export interface FreePayPixResponse {
+export interface FreePayPixObject {
   qr_code: string;
   qr_code_base64: string;
-  expires_at: string;
+  expiration_date: string;
+  expires_at?: string;
 }
 
 export interface CreatePixTransactionResponse {
@@ -50,35 +58,10 @@ export interface CreatePixTransactionResponse {
   status: string;
   amount: number;
   payment_method: string;
-  pix: FreePayPixResponse;
+  pix: FreePayPixObject | FreePayPixObject[];
   created_at: string;
   updated_at: string;
-}
-
-// Função para criar transação PIX
-export async function createPixTransaction(
-  data: CreatePixTransactionRequest,
-  apiKey: string,
-): Promise<CreatePixTransactionResponse> {
-  const response = await fetch(
-    "https://api.freepaybrasil.com/v1/payment-transaction/create",
-    {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Accept: "application/json",
-        Authorization: `Basic ${btoa(apiKey + ":")}`,
-      },
-      body: JSON.stringify(data),
-    },
-  );
-
-  if (!response.ok) {
-    const errorData = await response.json().catch(() => ({}));
-    throw new Error(
-      errorData.message || `Erro ao criar transação: ${response.status}`,
-    );
-  }
-
-  return response.json();
+  data?: {
+    pix: FreePayPixObject[];
+  };
 }
