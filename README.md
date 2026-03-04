@@ -1,36 +1,138 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# 🍫 Cacau Show - E-commerce
 
-## Getting Started
+Sistema de e-commerce completo para venda de chocolates com pagamento via PIX, desenvolvido com Next.js 14 e TypeScript.
 
-First, run the development server:
+## 🚀 Tecnologias
+
+- **Next.js 14** - Framework React com App Router
+- **TypeScript** - Tipagem estática
+- **Tailwind CSS** - Estilização
+- **Prisma ORM** - Gerenciamento de banco de dados
+- **SQLite** - Banco de dados em arquivo
+- **FreePay Brasil** - API de pagamentos PIX
+- **Brevo (Sendinblue)** - Serviço de envio de emails
+
+## 📋 Funcionalidades
+
+✅ Catálogo de produtos com filtros e busca  
+✅ Carrinho de compras com localStorage  
+✅ Checkout completo com validação de CPF e CEP  
+✅ Integração com FreePay Brasil para pagamento PIX  
+✅ Envio automático de emails de confirmação via Brevo  
+✅ Webhooks para atualização de status de pagamento  
+✅ Dashboard administrativo com autenticação  
+✅ Exportação de transações para Excel  
+✅ Persistência de dados com SQLite + Prisma  
+
+## 🛠️ Instalação
 
 ```bash
+# Clonar o repositório
+git clone <url-do-repositorio>
+
+# Instalar dependências
+npm install
+
+# Configurar variáveis de ambiente
+cp .env.example .env.local
+
+# Editar .env.local com suas credenciais
+
+# Criar banco de dados
+npx prisma generate
+npx prisma db push
+
+# Rodar em desenvolvimento
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Acesse [http://localhost:3000](http://localhost:3000)
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## ⚙️ Configuração
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+### 1. FreePay Brasil
 
-## Learn More
+Obtenha suas credenciais em [https://freepaybrasil.com.br](https://freepaybrasil.com.br)
 
-To learn more about Next.js, take a look at the following resources:
+```env
+FREEPAY_PUBLIC_KEY=pk_live_...
+FREEPAY_SECRET_KEY=sk_live_...
+FREEPAY_WEBHOOK_URL=https://seu-dominio.com/api/webhook/freepay
+```
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+### 2. Brevo (Email)
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+Obtenha a API key em [https://app.brevo.com/settings/keys/api](https://app.brevo.com/settings/keys/api)
 
-## Deploy on Vercel
+```env
+BREVO_API_KEY=xsmtpsib-...
+```
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+### 3. Admin Dashboard
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+Configure credenciais do admin:
+
+```env
+ADMIN_ROUTE_HASH=seu_hash_personalizado
+ADMIN_USERNAME=admin@cacau.com.br
+ADMIN_PASSWORD_HASH=$2y$12$...
+```
+
+**Gere o hash da senha em:** [https://bcrypt-generator.com/](https://bcrypt-generator.com/) (rounds: 12)
+
+## 📱 Rotas
+
+- `/` - Loja (produtos)
+- `/admin/[hash]/login` - Login do admin
+- `/admin/[hash]/dashboard` - Dashboard administrativo
+- `/api/webhook/freepay` - Webhook de pagamentos
+- `/api/admin/auth` - Autenticação admin
+- `/api/admin/transactions` - API de transações
+
+## 🗄️ Banco de Dados
+
+O projeto usa Prisma com SQLite. O banco é criado automaticamente em `prisma/dev.db`.
+
+```bash
+# Sincronizar schema com banco
+npx prisma db push
+
+# Abrir Prisma Studio (interface visual)
+npx prisma studio
+
+# Resetar banco (CUIDADO: apaga todos os dados)
+npx prisma db push --force-reset
+```
+
+## 📊 Dashboard Admin
+
+Acesse: `http://localhost:3000/admin/[SEU_HASH]/login`
+
+Funcionalidades:
+- Lista de todas as transações
+- Estatísticas (total, pago, pendente, recusado)
+- Exportação para Excel
+- Exclusão de transações
+- Dados completos: CPF, telefone, endereço, CEP
+
+## 🧪 Ambiente de Desenvolvimento
+
+Produto de teste disponível apenas em `NODE_ENV=development`:
+- ID: 999
+- Preço: R$ 0,50
+- Nome: "Tablete Teste"
+
+## 📦 Build para Produção
+
+```bash
+# Build
+npm run build
+
+# Rodar em produção
+npm start
+```
+
+## 📄 Licença
+
+Este projeto é privado.
+
