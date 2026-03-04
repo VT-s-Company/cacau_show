@@ -8,18 +8,18 @@ type Transaction = {
   amount: number;
   status: string;
   paymentDate: Date;
-  customerName: string;
-  customerEmail: string;
-  customerCpf: string;
-  customerPhone: string;
-  street: string;
-  streetNumber: string;
+  customerName: string | null;
+  customerEmail: string | null;
+  customerCpf: string | null;
+  customerPhone: string | null;
+  street: string | null;
+  streetNumber: string | null;
   complement: string | null;
-  district: string;
-  city: string;
-  state: string;
-  zipCode: string;
-  shippingMethod: string;
+  district: string | null;
+  city: string | null;
+  state: string | null;
+  zipCode: string | null;
+  shippingMethod: string | null;
   items: string | null;
   createdAt: Date;
   updatedAt: Date;
@@ -52,20 +52,20 @@ export async function GET(req: NextRequest) {
       status: transaction.status,
       paymentDate: transaction.paymentDate.toISOString(),
       checkoutData: {
-        customerName: transaction.customerName,
-        customerEmail: transaction.customerEmail,
-        customerCpf: transaction.customerCpf,
-        customerPhone: transaction.customerPhone,
+        customerName: transaction.customerName || "",
+        customerEmail: transaction.customerEmail || "",
+        customerCpf: transaction.customerCpf || "",
+        customerPhone: transaction.customerPhone || "",
         shippingAddress: {
-          street: transaction.street,
-          number: transaction.streetNumber,
-          complement: transaction.complement,
-          district: transaction.district,
-          city: transaction.city,
-          state: transaction.state,
-          zip_code: transaction.zipCode,
+          street: transaction.street || "",
+          number: transaction.streetNumber || "",
+          complement: transaction.complement || "",
+          district: transaction.district || "",
+          city: transaction.city || "",
+          state: transaction.state || "",
+          zip_code: transaction.zipCode || "",
         },
-        shippingMethod: transaction.shippingMethod,
+        shippingMethod: transaction.shippingMethod || "",
         items: transaction.items ? JSON.parse(transaction.items) : [],
       },
     }));
