@@ -1,5 +1,7 @@
 "use client";
 
+import Image from "next/image";
+
 import {
   Dialog,
   DialogContent,
@@ -13,12 +15,14 @@ interface ConfirmDrawingModalProps {
   readonly open: boolean;
   readonly onOpenChange: (open: boolean) => void;
   readonly onConfirm: () => void;
+  readonly drawingPreviewUrl?: string | null;
 }
 
 export function ConfirmDrawingModal({
   open,
   onOpenChange,
   onConfirm,
+  drawingPreviewUrl,
 }: ConfirmDrawingModalProps) {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -39,6 +43,27 @@ export function ConfirmDrawingModal({
             🎨 <strong>Lembre-se:</strong> Quanto mais criativo e caprichado for
             seu desenho, maiores as chances de ganhar prêmios especiais!
           </p>
+        </div>
+
+        <div className="mx-4 rounded-lg border border-border bg-background p-3">
+          <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">
+            Prévia do seu desenho
+          </p>
+          <div className="rounded-md border border-dashed border-border min-h-40 flex items-center justify-center overflow-hidden bg-white">
+            {drawingPreviewUrl ? (
+              <Image
+                src={drawingPreviewUrl}
+                alt="Prévia do desenho"
+                width={320}
+                height={208}
+                className="max-h-52 w-auto object-contain bg-white"
+              />
+            ) : (
+              <span className="text-sm text-muted-foreground">
+                Nenhum traço detectado ainda.
+              </span>
+            )}
+          </div>
         </div>
 
         <DialogFooter className="flex-col sm:flex-row gap-2 mx-4 mb-6">

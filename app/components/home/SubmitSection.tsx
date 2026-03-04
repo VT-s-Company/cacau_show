@@ -17,6 +17,7 @@ export function SubmitSection() {
     showResult,
     showPrize,
     progress,
+    drawingPreviewUrl,
     setIsAnalyzing,
     setShowResult,
     setShowPrize,
@@ -143,6 +144,7 @@ export function SubmitSection() {
         open={isModalOpen}
         onOpenChange={setIsModalOpen}
         onConfirm={handleConfirm}
+        drawingPreviewUrl={drawingPreviewUrl}
       />
     </>
   );

@@ -15,10 +15,12 @@ interface DrawFlowContextType {
   showResult: boolean;
   showPrize: boolean;
   progress: number;
+  drawingPreviewUrl: string | null;
   setIsAnalyzing: Dispatch<SetStateAction<boolean>>;
   setShowResult: Dispatch<SetStateAction<boolean>>;
   setShowPrize: Dispatch<SetStateAction<boolean>>;
   setProgress: Dispatch<SetStateAction<number>>;
+  setDrawingPreviewUrl: Dispatch<SetStateAction<string | null>>;
 }
 
 const DrawFlowContext = createContext<DrawFlowContextType | undefined>(
@@ -34,6 +36,9 @@ export function DrawFlowProvider({
   const [showResult, setShowResult] = useState(false);
   const [showPrize, setShowPrize] = useState(false);
   const [progress, setProgress] = useState(0);
+  const [drawingPreviewUrl, setDrawingPreviewUrl] = useState<string | null>(
+    null,
+  );
 
   const value = useMemo(
     () => ({
@@ -41,12 +46,14 @@ export function DrawFlowProvider({
       showResult,
       showPrize,
       progress,
+      drawingPreviewUrl,
       setIsAnalyzing,
       setShowResult,
       setShowPrize,
       setProgress,
+      setDrawingPreviewUrl,
     }),
-    [isAnalyzing, showResult, showPrize, progress],
+    [isAnalyzing, showResult, showPrize, progress, drawingPreviewUrl],
   );
 
   return (

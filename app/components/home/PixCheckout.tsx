@@ -32,6 +32,23 @@ function onlyDigits(value: string) {
   return value.replaceAll(/\D/g, "");
 }
 
+function calculateShippingAdjustment(cep: string): number {
+  const firstDigit = cep.charAt(0);
+  
+  // Região Sudeste (SP, RJ, ES, MG) - mais barato
+  if (["0", "1", "2", "3"].includes(firstDigit)) {
+    return -5;
+  }
+  
+  // Região Norte, Nordeste, Centro-Oeste - mais caro
+  if (["6", "7", "8"].includes(firstDigit)) {
+    return 5;
+  }
+  
+  // Região Sul e nordeste próximo - preço normal
+  return 0;
+}
+
 function formatCep(value: string) {
   const digits = onlyDigits(value).slice(0, 8);
   if (digits.length <= 5) return digits;
@@ -67,13 +84,15 @@ export default function PixCheckout({
   const [cepLoading, setCepLoading] = useState(false);
   const [shippingOption, setShippingOption] =
     useState<ShippingOption>("gratis");
+  const [shippingAdjustment, setShippingAdjustment] = useState(0);
 
   const cepDigits = useMemo(() => onlyDigits(cep), [cep]);
 
   const tabletsCount = selectedTablets.filter(Boolean).length;
   const tabletsPrice = tabletsCount * 10;
-  const shippingPrice =
+  const baseShippingPrice =
     shippingOptions.find((opt) => opt.id === shippingOption)?.price || 0;
+  const shippingPrice = Math.max(0, baseShippingPrice + shippingAdjustment);
   const totalPrice = product.discountPrice + tabletsPrice + shippingPrice;
 
   const handleTabletChange = (index: number) => {
@@ -114,6 +133,10 @@ export default function PixCheckout({
       setDistrict(data.bairro ?? "");
       setCity(data.localidade ?? "");
       setState(data.uf ?? "");
+      
+      // Calcula o ajuste de frete baseado na região do CEP
+      const adjustment = calculateShippingAdjustment(cepDigits);
+      setShippingAdjustment(adjustment);
     } catch {
       setCepError("Não foi possível buscar o CEP agora.");
     } finally {
@@ -151,12 +174,10 @@ export default function PixCheckout({
           Voltar ao produto
         </button>
       </nav>
-
+      <h1 className="text-2xl sm:text-3xl font-serif italic text-foreground mb-5">
+        Finalizar Compra
+      </h1>
       <div className="grid grid-cols-1 lg:grid-cols-[1fr_360px] gap-6">
-        <h1 className="text-2xl sm:text-3xl font-serif italic text-foreground">
-          Finalizar Compra
-        </h1>
-
         <section className="space-y-5">
           {/* CARD DO PRODUTO */}
           <div className="rounded-xl border border-border overflow-hidden">
@@ -408,7 +429,7 @@ export default function PixCheckout({
                   <p className="text-sm font-bold text-[#2d9b3a]">
                     {option.price === 0
                       ? "Grátis"
-                      : `R$ ${option.price.toFixed(2)}`}
+                      : `R$ ${Math.max(0, option.price + shippingAdjustment).toFixed(2)}`}
                   </p>
                 </label>
               ))}
