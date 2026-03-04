@@ -6,10 +6,10 @@ import Image from "next/image";
 
 interface PixDisplayProps {
   code: string;
-  expiration: string;
+  expiration?: string;
 }
 
-export default function PixDisplay({ code, expiration }: PixDisplayProps) {
+export default function PixDisplay({ code }: PixDisplayProps) {
   const [qrImage, setQrImage] = useState<string>("");
 
   useEffect(() => {

@@ -125,6 +125,16 @@ export const products: Product[] = [
     weight: "220g",
     description: "Ovo laCreme ao leite com bombons clássicos.",
   },
+  {
+    id: 999,
+    name: "[TESTE] Produto de Desenvolvimento",
+    image: "/images/products/ovo-classico.jpg",
+    originalPrice: 1.0,
+    discountPrice: 0.5,
+    weight: "1g",
+    description:
+      "Produto de teste para desenvolvimento - apenas R$ 0,50 para testar pagamentos.",
+  },
 ];
 
 const banners = [
@@ -155,11 +165,20 @@ export default function ProductsStore() {
   }, []);
 
   const filteredProducts = useMemo(() => {
-    return products.filter(
-      (product) =>
+    const isDevelopment = process.env.NODE_ENV === "development";
+
+    return products.filter((product) => {
+      // Filtrar produto de teste em produção
+      if (product.id === 999 && !isDevelopment) {
+        return false;
+      }
+
+      // Filtro de busca
+      return (
         product.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        product.description.toLowerCase().includes(searchTerm.toLowerCase()),
-    );
+        product.description.toLowerCase().includes(searchTerm.toLowerCase())
+      );
+    });
   }, [searchTerm]);
 
   const openDetails = (product: Product) => {

@@ -7,6 +7,10 @@ import TabletesSelect from "./TabletesSelect";
 import { ChevronLeft, X } from "lucide-react";
 import PixPaymentModal from "./PixPaymentModal";
 import { type FreePayItemRequest } from "@/lib/freepay-api";
+import {
+  storeCheckoutData,
+  convertPixCheckoutToCheckoutData,
+} from "@/lib/checkout-storage";
 
 interface PixCheckoutProps {
   product: Product;
@@ -82,6 +86,7 @@ export default function PixCheckout({
     initialSelectedTablets,
   );
   const [fullName, setFullName] = useState("");
+  const [email, setEmail] = useState("");
   const [cpf, setCpf] = useState("");
   const [phone, setPhone] = useState("");
   const [cep, setCep] = useState("");
@@ -184,6 +189,7 @@ export default function PixCheckout({
   const handleFinishPurchase = async () => {
     if (
       !fullName ||
+      !email ||
       !cpf ||
       !phone ||
       !cep ||
@@ -252,7 +258,7 @@ export default function PixCheckout({
             number: onlyDigits(cpf),
           },
           name: fullName,
-          email: "cliente@example.com",
+          email: email,
           phone: `+55${onlyDigits(phone)}`,
         },
         amount: Math.round(totalPrice * 100),
@@ -334,6 +340,43 @@ export default function PixCheckout({
         expiresAt: transactionData.pix.expiration_date,
         transactionId: transactionData.id,
       });
+
+      // Armazenar dados de checkout para o webhook e página de sucesso
+      const checkoutData = convertPixCheckoutToCheckoutData(
+        transactionData.id,
+        fullName,
+        email,
+        cpf,
+        phone,
+        items,
+        {
+          street,
+          street_number: number,
+          complement,
+          neighborhood: district,
+          city,
+          state,
+          zip_code: cepDigits.replace(/(\d{5})(\d{3})/, "$1-$2"),
+        },
+        shippingOptions.find((opt) => opt.id === shippingOption)?.label ??
+          "Frete",
+        transactionData.amount,
+      );
+      storeCheckoutData(checkoutData);
+
+      // Registrar dados de checkout no backend para o webhook usar
+      try {
+        await fetch("/api/webhook/freepay?method=register", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(checkoutData),
+        });
+      } catch (regError) {
+        console.warn(
+          "Aviso: não foi possível registrar dados de checkout no backend",
+          regError,
+        );
+      }
 
       setShowPixModal(true);
     } catch (error) {
@@ -469,6 +512,23 @@ export default function PixCheckout({
                   }}
                   className="mt-1 w-full rounded-xl border-2 border-border px-4 py-3 bg-background"
                   placeholder="(11) 99999-9999"
+                />
+              </div>
+
+              <div className="md:col-span-2">
+                <label
+                  htmlFor="checkout-email"
+                  className="text-sm font-medium text-foreground"
+                >
+                  E-mail
+                </label>
+                <input
+                  id="checkout-email"
+                  type="email"
+                  value={email}
+                  onChange={(event) => setEmail(event.target.value)}
+                  className="mt-1 w-full rounded-xl border-2 border-border px-4 py-3 bg-background"
+                  placeholder="seu@email.com"
                 />
               </div>
             </div>
