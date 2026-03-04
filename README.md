@@ -8,7 +8,7 @@ Sistema de e-commerce completo para venda de chocolates com pagamento via PIX, d
 - **TypeScript** - Tipagem estática
 - **Tailwind CSS** - Estilização
 - **Prisma ORM** - Gerenciamento de banco de dados
-- **SQLite** - Banco de dados em arquivo
+- **PostgreSQL (Neon)** - Banco de dados serverless
 - **FreePay Brasil** - API de pagamentos PIX
 - **Brevo (Sendinblue)** - Serviço de envio de emails
 
@@ -22,7 +22,7 @@ Sistema de e-commerce completo para venda de chocolates com pagamento via PIX, d
 ✅ Webhooks para atualização de status de pagamento  
 ✅ Dashboard administrativo com autenticação  
 ✅ Exportação de transações para Excel  
-✅ Persistência de dados com SQLite + Prisma  
+✅ Persistência de dados com PostgreSQL (Neon) + Prisma  
 
 ## 🛠️ Instalação
 
@@ -68,7 +68,23 @@ Obtenha a API key em [https://app.brevo.com/settings/keys/api](https://app.brevo
 BREVO_API_KEY=xsmtpsib-...
 ```
 
-### 3. Admin Dashboard
+### 3. Neon PostgreSQL (Database)
+
+Crie um banco de dados no Neon através da Vercel:
+
+1. Acesse [Vercel Storage](https://vercel.com/storage/postgres)
+2. Crie um novo banco de dados Neon
+3. Copie as credenciais geradas
+
+```env
+DATABASE_URL=postgresql://user:password@host.neon.tech/database?sslmode=require
+DATABASE_URL_UNPOOLED=postgresql://user:password@host.neon.tech/database?sslmode=require
+```
+
+O `DATABASE_URL` usa connection pooling (recomendado para aplicações).  
+O `DATABASE_URL_UNPOOLED` é conexão direta (use para migrações se necessário).
+
+### 4. Admin Dashboard
 
 Configure credenciais do admin:
 
@@ -91,18 +107,28 @@ ADMIN_PASSWORD_HASH=$2y$12$...
 
 ## 🗄️ Banco de Dados
 
-O projeto usa Prisma com SQLite. O banco é criado automaticamente em `prisma/dev.db`.
+O projeto usa Prisma ORM com PostgreSQL (Neon) - um banco de dados serverless otimizado para Next.js.
 
 ```bash
-# Sincronizar schema com banco
+# Gerar Prisma Client
+npx prisma generate
+
+# Sincronizar schema com banco (cria/atualiza tabelas)
 npx prisma db push
 
-# Abrir Prisma Studio (interface visual)
+# Abrir Prisma Studio (interface visual do banco)
 npx prisma studio
 
 # Resetar banco (CUIDADO: apaga todos os dados)
 npx prisma db push --force-reset
 ```
+
+**Vantagens do Neon:**
+- ✅ Serverless (paga apenas pelo uso)
+- ✅ Connection pooling automático
+- ✅ Escalabilidade automática
+- ✅ Compatível com Vercel
+- ✅ Backups automáticos
 
 ## 📊 Dashboard Admin
 

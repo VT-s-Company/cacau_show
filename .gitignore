@@ -63,7 +63,7 @@ lerna-debug.log*
 # typescript
 *.tsbuildinfo
 
-# database (Prisma + SQLite)
+# database (Prisma)
 prisma/dev.db
 prisma/dev.db-journal
 prisma/*.db
