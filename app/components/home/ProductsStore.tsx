@@ -126,8 +126,8 @@ export const products: Product[] = [
     description: "Ovo laCreme ao leite com bombons clássicos.",
   },
   {
-    id: 999,
-    name: "[TESTE] Produto de Desenvolvimento",
+    id: 14,
+    name: "Produto de Desenvolvimento",
     image: "/images/products/ovo-classico.jpg",
     originalPrice: 1.0,
     discountPrice: 0.5,
