@@ -7,7 +7,7 @@ import {
 import { prisma } from "@/lib/prisma";
 
 interface FreepayWebhookPayload {
-  data: {
+  data?: {
     id: string;
     amount: number;
     status: string;
@@ -21,6 +21,17 @@ interface FreepayWebhookPayload {
   };
   event?: string;
   timestamp?: string;
+  // Formato direto PascalCase (formato real da API)
+  Id?: string;
+  ExternalId?: string;
+  Amount?: number;
+  Status?: string;
+  PaymentMethod?: string;
+  PaidAt?: string;
+  CreatedAt?: string;
+  UpdatedAt?: string;
+  Installments?: number;
+  PostbackUrl?: string;
 }
 
 export async function POST(req: NextRequest) {
@@ -67,11 +78,26 @@ export async function POST(req: NextRequest) {
     console.log("=== Webhook FreePay Recebido ===");
     console.log("Payload:", JSON.stringify(payload, null, 2));
 
-    const { data } = payload;
+    // Normalizar payload - suporta formato nested e formato direto (PascalCase)
+    const data = payload.data || {
+      id: payload.ExternalId || payload.Id || "",
+      amount: payload.Amount ? payload.Amount * 100 : 0, // Converter para centavos se vier em reais
+      status: payload.Status || "",
+      payment_method: payload.PaymentMethod || "pix",
+      created_at: payload.CreatedAt,
+    };
 
-    if (!data) {
-      return NextResponse.json({ error: "Dados inválidos" }, { status: 400 });
+    if (!data.id || !data.status) {
+      console.error("❌ Payload inválido - faltam dados essenciais");
+      return NextResponse.json(
+        { error: "Dados inválidos - faltam id ou status" },
+        { status: 400 },
+      );
     }
+
+    console.log(
+      `📦 Processando transação: ${data.id} | Status: ${data.status}`,
+    );
 
     // Verificar se o pagamento foi confirmado
     if (data.status === "CONFIRMED" || data.status === "PAID") {
