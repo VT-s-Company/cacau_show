@@ -185,24 +185,22 @@ export function DrawWorkspace() {
 
   return (
     <div className="flex flex-col sm:flex-row items-start justify-center gap-4 px-4 w-full max-w-3xl mx-auto">
-      <div className="bg-card rounded-2xl shadow-lg border border-border p-3 shrink-0">
-        <div
-          className="relative bg-white rounded-xl"
-          style={{ width: "420px", height: "470px" }}
-        >
+      <div className="bg-card rounded-2xl shadow-lg border border-border p-3 w-full">
+        <div className="relative w-full max-w-[420px] mx-auto aspect-[420/470] bg-white">
+          {/* Canvas Template */}
           <canvas
             ref={templateCanvasRef}
             width={CANVAS_WIDTH}
             height={CANVAS_HEIGHT}
-            className="absolute inset-0 rounded-xl pointer-events-none"
-            style={{ width: "420px", height: "470px" }}
+            className="absolute inset-0 w-full h-full rounded-xl pointer-events-none"
           />
+
+          {/* Canvas Draw */}
           <canvas
             ref={drawCanvasRef}
             width={CANVAS_WIDTH}
             height={CANVAS_HEIGHT}
-            className="absolute inset-0 rounded-xl cursor-crosshair touch-none"
-            style={{ width: "420px", height: "470px" }}
+            className="absolute inset-0 w-full h-full rounded-xl cursor-crosshair touch-none"
             onPointerDown={handlePointerDown}
             onPointerMove={handlePointerMove}
             onPointerUp={handlePointerUp}
