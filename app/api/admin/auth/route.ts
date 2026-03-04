@@ -28,7 +28,7 @@ export async function POST(req: NextRequest) {
     // const isValidPassword = await bcrypt.compare(password, ADMIN_CREDENTIALS.passwordHash);
 
     // Para desenvolvimento, aceitar senha simples
-    const isValidPassword = password === "admin123";
+    const isValidPassword = password === "admin1cacau123";
 
     if (!isValidPassword) {
       return NextResponse.json(
