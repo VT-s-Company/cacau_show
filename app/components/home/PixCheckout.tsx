@@ -5,6 +5,8 @@ import Image from "next/image";
 import type { Product } from "./storeTypes";
 import TabletesSelect from "./TabletesSelect";
 import { ChevronLeft } from "lucide-react";
+import PixPaymentModal from "./PixPaymentModal";
+import { createPixTransaction, type FreePayItem } from "@/lib/freepay-api";
 
 interface PixCheckoutProps {
   product: Product;
@@ -34,17 +36,17 @@ function onlyDigits(value: string) {
 
 function calculateShippingAdjustment(cep: string): number {
   const firstDigit = cep.charAt(0);
-  
+
   // Região Sudeste (SP, RJ, ES, MG) - mais barato
   if (["0", "1", "2", "3"].includes(firstDigit)) {
     return -5;
   }
-  
+
   // Região Norte, Nordeste, Centro-Oeste - mais caro
   if (["6", "7", "8"].includes(firstDigit)) {
     return 5;
   }
-  
+
   // Região Sul e nordeste próximo - preço normal
   return 0;
 }
@@ -85,6 +87,15 @@ export default function PixCheckout({
   const [shippingOption, setShippingOption] =
     useState<ShippingOption>("gratis");
   const [shippingAdjustment, setShippingAdjustment] = useState(0);
+  const [isGeneratingPix, setIsGeneratingPix] = useState(false);
+  const [showPixModal, setShowPixModal] = useState(false);
+  const [pixData, setPixData] = useState<{
+    qrCode: string;
+    qrCodeBase64: string;
+    amount: number;
+    expiresAt: string;
+    transactionId: string;
+  } | null>(null);
 
   const cepDigits = useMemo(() => onlyDigits(cep), [cep]);
 
@@ -133,7 +144,7 @@ export default function PixCheckout({
       setDistrict(data.bairro ?? "");
       setCity(data.localidade ?? "");
       setState(data.uf ?? "");
-      
+
       // Calcula o ajuste de frete baseado na região do CEP
       const adjustment = calculateShippingAdjustment(cepDigits);
       setShippingAdjustment(adjustment);
@@ -144,7 +155,7 @@ export default function PixCheckout({
     }
   };
 
-  const handleFinishPurchase = () => {
+  const handleFinishPurchase = async () => {
     if (
       !fullName ||
       !cpf ||
@@ -159,7 +170,108 @@ export default function PixCheckout({
       return;
     }
 
-    alert("Pedido PIX gerado com sucesso! Confira o QR Code no próximo passo.");
+    setIsGeneratingPix(true);
+
+    try {
+      // Preparar items para a API
+      const items: FreePayItem[] = [
+        {
+          title: product.name,
+          unit_price: Math.round(product.discountPrice * 100), // converter para centavos
+          quantity: 1,
+          tangible: true,
+        },
+      ];
+
+      // Adicionar tabletes selecionados
+      const tabletNames = [
+        "Tablete Pistache",
+        "Tablete Morango",
+        "Tablete Leite",
+      ];
+      selectedTablets.forEach((selected, index) => {
+        if (selected) {
+          items.push({
+            title: tabletNames[index],
+            unit_price: 1000, // R$ 10,00 em centavos
+            quantity: 1,
+            tangible: true,
+          });
+        }
+      });
+
+      // Adicionar frete se houver
+      if (shippingPrice > 0) {
+        const shippingLabel =
+          shippingOptions.find((opt) => opt.id === shippingOption)?.label ||
+          "Frete";
+        items.push({
+          title: shippingLabel,
+          unit_price: Math.round(shippingPrice * 100),
+          quantity: 1,
+          tangible: false,
+        });
+      }
+
+      // A chave da API deve ser fornecida nas variáveis de ambiente
+      const apiKey = process.env.NEXT_PUBLIC_FREEPAY_API_KEY || "";
+
+      if (!apiKey) {
+        throw new Error(
+          "Chave da API não configurada. Configure NEXT_PUBLIC_FREEPAY_API_KEY",
+        );
+      }
+
+      const response = await createPixTransaction(
+        {
+          amount: Math.round(totalPrice * 100), // converter para centavos
+          payment_method: "pix",
+          postback_url: `${globalThis.location.origin}/api/webhook/freepay`,
+          customer: {
+            name: fullName,
+            email: "cliente@example.com", // Você pode adicionar um campo de email
+            document: onlyDigits(cpf),
+            phone: onlyDigits(phone),
+            address: {
+              street,
+              number,
+              complement: complement || undefined,
+              district,
+              city,
+              state,
+              zipcode: cepDigits,
+            },
+          },
+          items,
+          pix: {
+            expires_in: 3600, // 1 hora
+          },
+          metadata: {
+            provider_name: "Cacau Show - Promoção Páscoa",
+          },
+        },
+        apiKey,
+      );
+
+      // Preparar dados para o modal
+      setPixData({
+        qrCode: response.pix.qr_code,
+        qrCodeBase64: response.pix.qr_code_base64,
+        amount: response.amount,
+        expiresAt: response.pix.expires_at,
+        transactionId: response.id,
+      });
+      setShowPixModal(true);
+    } catch (error) {
+      console.error("Erro ao gerar PIX:", error);
+      alert(
+        error instanceof Error
+          ? error.message
+          : "Erro ao gerar pagamento PIX. Tente novamente.",
+      );
+    } finally {
+      setIsGeneratingPix(false);
+    }
   };
 
   return (
@@ -459,9 +571,10 @@ export default function PixCheckout({
             <button
               type="button"
               onClick={handleFinishPurchase}
-              className="w-full rounded-xl bg-primary text-primary-foreground py-3 font-bold hover:bg-primary/90 transition-colors"
+              disabled={isGeneratingPix}
+              className="w-full rounded-xl bg-primary text-primary-foreground py-3 font-bold hover:bg-primary/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              Finalizar compra via PIX
+              {isGeneratingPix ? "Gerando PIX..." : "Finalizar compra via PIX"}
             </button>
           </div>
         </section>
@@ -530,6 +643,13 @@ export default function PixCheckout({
           </div>
         </aside>
       </div>
+
+      {/* Modal de Pagamento PIX */}
+      <PixPaymentModal
+        isOpen={showPixModal}
+        onClose={() => setShowPixModal(false)}
+        pixData={pixData}
+      />
     </div>
   );
 }
