@@ -104,7 +104,7 @@ export default function PixPaymentModal({
             <p className="text-sm font-medium text-foreground">
               Código PIX (Copia e Cola)
             </p>
-            <div className="flex gap-2">
+            <div className="flex gap-2 flex-col sm:flex-row">
               <input
                 type="text"
                 value={pixData.qrCode}
