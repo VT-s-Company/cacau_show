@@ -23,8 +23,10 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="pt-BR" suppressHydrationWarning>
-      <body className={` ${poppins.variable} antialiased`}>{children}</body>
+    <html lang="pt-BR" suppressHydrationWarning className="bg-primary">
+      <body className={` ${poppins.variable} antialiased bg-primary`}>
+        {children}
+      </body>
     </html>
   );
 }
