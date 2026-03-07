@@ -14,6 +14,7 @@ export const metadata: Metadata = {
   title: "Cacau Show - Desenhe e Ganhe",
   description:
     "Campanha de Páscoa da Cacau Show - Desenhe um ovo de Páscoa e desbloqueie seu presente!",
+  themeColor: "#5a3825",
 };
 
 export default function RootLayout({
